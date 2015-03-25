@@ -1,1 +1,31 @@
 
+CREATE Trigger CheckDate ON CLIMBED
+FOR UPDATE AS BEGIN
+IF @@ROWCOUNT =0
+RETURN;
+END
+
+DECLARE myRes CURSOR FOR
+SELECT i.TRIP_ID, i.WHEN_CLIMBED, c.TRIP_ID, c.WHEN_CLIMBED FROM inserted AS i, climbed AS c    
+WHERE i.TRIP_ID= c.TRIP_ID AND i.WHEN_CLIMBED<>c.WHEN_CLIMBED;
+
+DECLARE @TripID INT;
+DECLARE @oldDate INT;
+DECLARE @newDate INT;
+
+OPEN myRes;
+FETCH NEXT FROM myRes INTO TripID,  @oldDate, @neDate;
+
+WHILE (@@FETCH_STATUS = 0) BEGIN
+
+   IF (@newDate-@oldDate>20) BEGIN
+        PRINT 'WARNING: The climb you inserted is' +CAST((@newDate-@oldDate) AS VARCHAR(100)) +  'days from the closest existing climb in trip' + CAST(@TripID AS VARCHAR(30)).';
+        UPDATE climbed
+        SET WHEN_CLIMBED = @oldDate
+        WHERE TRIP_ID = @TripID;
+        FETCH NEXT FROM myRes INTO @TripID,  @oldDate, @newDate;
+END
+CLOSE myRes;
+DEALLOCATE myRes;
+
+END;
